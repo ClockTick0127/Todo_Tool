@@ -1,1 +1,155 @@
-# Todo_Tool
+# LifeKit
+
+안내 문서를 검토 가능한 절차로 정리하고, 내 상황에 맞는 체크리스트를 실행하는 **로컬 전용** 프로그램입니다. 프론트엔드, 백엔드, 독립 실행 엔진을 별도 폴더로 분리했습니다.
+
+## Windows EXE로 사용
+
+`release/LifeKit-0.1.0-Portable-x64.exe`를 더블클릭하면 설치 없이 앱 창이 열립니다. 자주 사용하는 경우 `release/LifeKit-Setup-0.1.0-x64.exe`로 설치하고 바탕화면의 LifeKit 바로가기를 사용하세요. **완성된 EXE를 사용하는 PC에는 Node.js·npm·브라우저·DB 서버를 따로 설치할 필요가 없습니다.** Windows 10/11 64비트를 대상으로 합니다.
+
+Electron이 앱 창과 런타임을 포함합니다. 앱을 실행하면 내부 백엔드가 비어 있는 로컬 포트에서 자동 시작하고, 종료하면 서버도 종료합니다. 다른 프로그램이 4310번 포트를 사용해도 EXE 실행에는 영향을 주지 않습니다. 중복 실행은 기존 창으로 연결합니다.
+
+EXE의 데이터는 `%APPDATA%\LifeKit\data`, AI 설정은 `%APPDATA%\LifeKit\.env`에 저장합니다. 앱을 업데이트하거나 휴대용 EXE를 옮겨도 같은 Windows 사용자 계정의 데이터는 유지됩니다. 휴대용은 **설치가 필요 없다는 의미**이며 데이터까지 USB에 함께 저장하는 방식은 아닙니다. 제거 프로그램은 데이터 폴더를 삭제하지 않습니다.
+
+앱 상단 **LifeKit → AI 설정 파일 위치 열기**에서 `.env`를 텍스트 편집기로 수정하세요. 설정을 저장한 뒤 **설정 적용 후 앱 다시 시작**을 선택합니다. 기본값은 AI 미설정이며 기존 수동 기능은 그대로 사용할 수 있습니다. **데이터 폴더 열기** 메뉴에서 백업할 폴더를 확인할 수 있습니다. 백업·복원은 앱 종료 후 진행하세요.
+
+기존 웹 실행에서 사용한 기록을 옮기려면 웹 서버와 EXE를 모두 종료한 뒤 `backend/data`의 파일 전체를 `%APPDATA%\LifeKit\data`에 복사하세요. 기존 원본 폴더는 유지해 백업으로 보관할 수 있습니다.
+
+### EXE 다시 만들기 (개발자용)
+
+EXE를 만드는 개발 PC에는 Node.js 24 이상과 최초 다운로드를 위한 인터넷 연결이 필요합니다.
+
+```powershell
+npm install
+npm run desktop:dist
+npm run desktop:smoke
+# 휴대용 EXE 자체를 검사하려면:
+npm run desktop:smoke -- release/LifeKit-0.1.0-Portable-x64.exe
+```
+
+`desktop/`은 앱 창·메뉴·수명주기, `desktop-dist/`는 묶인 백엔드, `release/`는 배포 결과입니다. 기존 `frontend/`, `backend/`, `packages/core/` 구분은 유지됩니다. 검사에서는 EXE에 포함된 런타임으로 SQLite, 내부 API, 프론트 파일 제공, 체크리스트 저장, 실제 PDF 추출을 확인합니다. 검사 데이터는 `test-results/`에만 생성되며 실제 사용자 데이터와 분리됩니다. 개발 중 앱 창을 열려면 `npm run desktop:dev`를 실행하세요.
+
+설치형·휴대용 파일은 로컬 빌드이며 코드 서명 인증서는 포함하지 않습니다. 별도 자동 업데이트는 없으므로 새 빌드를 다시 설치하거나 휴대용 파일을 교체합니다. AI 제공자 실호출, 전체 화면 클릭 자동화, 설치 마법사 전체 자동 검증은 별도입니다.
+
+## 브라우저로 실행 (개발·대체 방식)
+
+**Node.js 24 LTS 이상**을 설치한 뒤 `start-lifekit.cmd`를 더블클릭하세요. 처음 실행할 때 패키지를 설치하고 화면을 빌드합니다. 창에 준비 완료 메시지가 나오면 **http://127.0.0.1:4310**을 브라우저에서 여세요. 실행 창을 열어 두어야 사용 가능합니다. 종료하려면 창에서 `Ctrl+C`를 누르세요.
+
+터미널에서는 프로젝트 루트에서:
+
+```powershell
+npm install
+npm run build
+npm start
+```
+
+패키지 설치에는 인터넷이 필요합니다. 설치 이후 예제, 수동 편집, 진행 관리는 오프라인에서 동작합니다. AI 분석만 설정한 모델 연결이 필요합니다. 로그인이나 별도 데이터베이스 서버는 필요 없습니다.
+
+개발 모드:
+
+```powershell
+npm run dev
+```
+
+프론트: http://127.0.0.1:5173 / 백엔드: http://127.0.0.1:4310. Vite가 `/api` 요청을 백엔드로 전달합니다. 배포 빌드에서는 백엔드가 프론트 파일도 제공합니다. 두 실행 모드는 동시에 켜지 마세요.
+
+## 사용하는 순서
+
+1. **가이드 둘러보기**에서 신입생 온보딩 예제를 시작합니다. 거주 형태, 외국인 여부, 장학금 신청 여부에 따라 작업이 달라집니다. 예제의 안내와 날짜는 실제 기관의 규정이 아닙니다.
+2. 체크리스트에서 작업을 선택해 상세 안내, 준비물, 선행 작업, 페이지별 원문 근거를 확인합니다. 선행 작업이 끝나야 후속 작업을 완료할 수 있습니다. 목표 날짜·메모를 별도로 저장할 수 있습니다.
+3. **문서 스튜디오 → PDF 업로드**에서 본인의 PDF를 추가합니다. 텍스트 PDF, 10MB·50페이지·추출 텍스트 100,000자 이하를 지원합니다. 스캔 PDF는 먼저 OCR이 필요합니다.
+4. AI를 설정했다면 작업·조건·의존성을 자동 추출합니다. 설정하지 않았다면 **페이지별 수동 초안**을 생성합니다. 수동 초안은 자동 분석 결과가 아닙니다.
+5. 시각 편집 또는 JSON에서 질문·조건·작업·준비물·마감일·선행 관계·원문 인용을 검토합니다. **저장**은 초안 저장, **검토 완료·배포**는 사용할 수 있는 가이드로 확정합니다. 원문 문서가 연결된 가이드는 모든 작업의 인용문이 실제 페이지에 있어야 배포됩니다.
+6. 배포된 가이드는 **새 버전 만들기**로 수정합니다. 버전 비교에서 추가·삭제·수정된 작업을 봅니다. 진행 화면의 **버전 확인**에서 새 버전을 직접 적용합니다. 변경된 작업과 그 후속 작업의 완료는 초기화하고, 변경 없는 작업의 완료·메모는 유지합니다. 질문이 변경되면 조건을 다시 입력합니다.
+
+## AI 연결 (선택)
+
+`backend/.env.example`을 `backend/.env`로 복사한 뒤 다음을 입력하고 **서버를 재시작**하세요.
+
+```dotenv
+AI_BASE_URL=https://api.openai.com/v1
+AI_MODEL=사용하려는_모델명
+AI_API_KEY=발급받은_API_키
+```
+
+OpenAI 호환 `/chat/completions`와 JSON 응답을 지원하는 모델 하나를 사용합니다. 모델명은 본인의 제공자 계정에서 지원하는 값을 입력하세요. 키는 백엔드에서만 읽으며 화면·브라우저 저장소로 보내지 않습니다. AI 분석을 선택할 때는 추출한 문서 텍스트 전체를 설정한 제공자에게 전송합니다. AI 응답은 스키마·의존성·정확한 인용문을 검사하고, 사람의 검토 후 배포합니다. 유효하지 않은 응답은 저장하지 않고 오류를 표시합니다.
+
+Ollama 등 로컬 모델의 호환 API도 사용할 수 있습니다:
+
+```dotenv
+AI_BASE_URL=http://127.0.0.1:11434/v1
+AI_MODEL=로컬에_설치한_모델명
+AI_API_KEY=
+```
+
+해당 모델이 구조화된 JSON 출력을 지원해야 합니다. 모델 품질과 제공자에 따라 생성이 실패할 수 있습니다. `backend/src/ai.ts`의 `AIAdapter` 인터페이스를 구현하면 다른 분석기로 교체할 수 있습니다.
+
+## 폴더 구분
+
+```text
+frontend/                  React + TypeScript + Vite 화면
+  src/App.tsx              대시보드·가이드·체크리스트·문서 검토
+  src/api.ts               백엔드 호출
+  src/styles.css           반응형 스타일
+backend/                   Express + TypeScript 로컬 API
+  src/app.ts               업로드·가이드·진행·버전 API
+  src/store.ts             SQLite 저장소
+  src/ai.ts                PDF 추출·AI Adapter·인용 검증
+  src/server.ts            127.0.0.1 서버 실행
+  data/                    실행 시 자동 생성, Git 제외
+packages/core/             독립 TypeScript 라이브러리
+  src/index.ts             Zod 규격·조건·순서·상태·버전 비교
+docs/                      Pack 규격·JSON Schema·API 문서
+```
+
+로컬 사용에 맞춰 별도 PostgreSQL/NestJS/Python 서비스 대신 SQLite와 Node.js 백엔드를 사용했습니다. AI와 Core Engine은 분리되어 있으며 실제 조건 판정은 AI 호출 없이 규칙으로 처리합니다. 절차 시각화에는 React Flow를 사용합니다.
+
+## 데이터와 백업
+
+데이터·PDF 원본·추출 원문·초안·버전·진행은 `backend/data/lifekit.sqlite`에 저장합니다. SQLite WAL 파일이 있을 수 있으므로 **앱을 종료하고 backend/data 폴더 전체를 복사**하세요. 복원도 종료 후 같은 폴더에 복사합니다. `.env`는 따로 백업하세요. 설정 화면의 JSON 내보내기는 검토용이며 PDF를 포함하지 않습니다. JSON 가져오기는 Scenario Pack 단위이며 진행 기록 일괄 복원 기능은 없습니다.
+
+일반 실행은 `127.0.0.1`에 바인딩하며 임의 외부 Host·Origin 요청을 거절합니다. 개인 PC용이므로 계정, 다중 사용자 권한, 외부 공개 호스팅은 포함하지 않습니다. `PORT`는 바꿀 수 있으나 개발 프록시 주소는 `frontend/vite.config.ts`에서도 맞춰야 합니다.
+
+## 검사
+
+```powershell
+npm run check
+npm test
+npm run build
+```
+
+엔진 테스트는 조건·잠금·순환 검사·완료 취소·버전 이전을 검증합니다. API 테스트는 실제 SQLite와 HTTP 서버, PDF 바이트를 사용해 업로드·배포·진행 저장·재접속·버전 적용·원문 검증을 확인합니다. AI는 호환 API를 모사한 테스트 서버로 요청과 검증을 확인합니다. 유료 제공자 실호출이나 OCR은 테스트하지 않습니다.
+
+JSON Schema 재생성:
+
+```powershell
+npm run build -w packages/core
+node scripts/export-schema.mjs
+```
+
+## 독립 재사용과 확장
+
+Core는 브라우저·Node에서 DB와 UI 없이 사용할 수 있습니다. `packages/core`에서 `npm pack`으로 라이브러리를 묶을 수 있습니다. 먼저 빌드하세요.
+
+```typescript
+import { validatePack, validateAnswers, buildPlan } from '@lifekit/core';
+const pack = validatePack(json);
+const answers = validateAnswers(pack, userAnswers);
+const tasks = buildPlan(pack, answers, savedProgress);
+```
+
+[Scenario Pack 규격](docs/scenario-pack.md), [JSON Schema](docs/scenario-pack.schema.json), [로컬 API](docs/api.md)를 참고하세요. 외부 프로그램은 HTTP API로 진행을 읽거나 완료 상태를 갱신할 수 있습니다. 캘린더·알림 통합, AI 질의응답, 협업·계정, OCR, 자동 일정 추출 보강은 후속 확장 범위입니다. MVP의 버전 비교는 작업 변경 및 기본 진행 상태 이전 수준입니다.
+
+## Docker (선택)
+
+일반 사용에는 필요 없습니다. Docker를 이미 사용하는 경우:
+
+```powershell
+docker build -t lifekit .
+docker run --rm -p 127.0.0.1:4310:4310 -v lifekit-data:/app/backend/data lifekit
+```
+
+컨테이너 내부에서만 `0.0.0.0`에 바인딩하고 호스트의 포트는 위 명령처럼 루프백에만 공개하세요. AI 환경 파일은 필요할 때 `--env-file backend/.env`로 전달할 수 있습니다. Docker 자체의 설치·빌드·실행 검증은 별도입니다.
+
+## 라이선스
+
+MIT. 기여 전에 `npm run check`, `npm test`, `npm run build`를 실행해 주세요. 새로운 Pack·AI Adapter·조건 엔진 개선은 독립적으로 기여할 수 있습니다. 실제 기관 문서를 공유할 때는 해당 문서의 배포 권한을 확인하세요.

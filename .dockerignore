@@ -1,0 +1,10 @@
+node_modules
+**/dist
+.git
+backend/data
+**/.env
+**/.env.local
+*.log
+release
+desktop-dist
+test-results

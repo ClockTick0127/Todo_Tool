@@ -1,0 +1,36 @@
+{
+  "appId": "com.lifekit.desktop",
+  "productName": "LifeKit",
+  "directories": { "output": "release" },
+  "files": [
+    "desktop/**",
+    "desktop-dist/**",
+    "frontend/dist/**",
+    "package.json"
+  ],
+  "extraResources": [
+    { "from": "backend/.env.example", "to": "lifekit.env.example" }
+  ],
+  "asar": true,
+  "npmRebuild": false,
+  "win": {
+    "icon": "desktop/assets/lifekit.ico",
+    "signExecutable": false,
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ]
+  },
+  "nsis": {
+    "artifactName": "LifeKit-Setup-${version}-x64.exe",
+    "oneClick": false,
+    "perMachine": false,
+    "allowElevation": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "runAfterFinish": false,
+    "deleteAppDataOnUninstall": false
+  },
+  "portable": { "artifactName": "LifeKit-${version}-Portable-x64.exe" }
+}

@@ -1,0 +1,44 @@
+{
+  "name": "lifekit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.mjs",
+  "description": "Local document-to-checklist workspace",
+  "author": "LifeKit contributors",
+  "license": "MIT",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "packages/core"
+  ],
+  "scripts": {
+    "desktop:build": "npm run build && node scripts/build-desktop.mjs",
+    "desktop:dev": "npm run desktop:build && electron .",
+    "desktop:dist": "npm run desktop:build && electron-builder --config electron-builder.json --win nsis portable --x64 --publish never",
+    "desktop:smoke": "node scripts/smoke-desktop.mjs",
+    "format": "prettier --write frontend/src backend/src backend/test packages/core/src packages/core/test scripts",
+    "dev": "npm run build -w packages/core && concurrently -k -n API,WEB -c cyan,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w packages/core && npm run build -w backend && npm run build -w frontend",
+    "start": "npm run start -w backend",
+    "test": "npm run build -w packages/core && tsx --test packages/core/test/*.test.ts backend/test/*.test.ts",
+    "check": "npm run build -w packages/core && tsc --noEmit -p backend && tsc --noEmit -p frontend"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.2.1",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.10",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.100",
+    "pdfjs-dist": "^6.4.299"
+  }
+}
