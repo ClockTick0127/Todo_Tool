@@ -41,6 +41,10 @@ JSON으로 정의하고 Core의 `validatePack`을 통과해야 합니다. JSON S
 | task.preparations | 준비물 문자열 배열 |
 | task.dueDate | 선택. 실제 유효한 `YYYY-MM-DD` 날짜 |
 | task.sources | 원문 페이지 양의 정수 + 정확한 인용문. 문서 연결 시 배포에 필수 |
+| executionMode | 선택. `ordered`(순서형) 또는 `checklist`(목록형). 기존 Pack은 없어도 실행 가능 |
+| task.completionLabel | 선택. `완료` 또는 `제출`. 진행 화면의 완료·제출 표시를 지정 |
+
+문서 없이 만든 상황도 같은 Pack 규격을 사용합니다. 원문 연결이 없는 경우 `sources: []`로 사용할 수 있습니다. 실행 모드는 UI 안내용 메타데이터이며 실제 실행 순서와 잠금은 `dependsOn`이 결정합니다. 직접 작성 화면은 순서형 작업의 기본 선행 관계를 연결하며, 예제나 편집 화면에서는 조건과 의존성을 별도로 정의할 수 있습니다. 같은 Pack으로 여러 Run을 만들면 진행 상태가 각각 독립적입니다.
 
 ## 실행 의미
 

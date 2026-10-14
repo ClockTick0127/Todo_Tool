@@ -44,6 +44,7 @@ import {
   type TaskState,
 } from "@lifekit/core";
 import { api, downloadJSON, type Health, type DocumentView } from "./api";
+import ScenarioCreator from "./ScenarioCreator";
 
 type Page = "home" | "guides" | "studio" | "settings" | "run";
 const today = () => new Date().toLocaleDateString("sv-SE");
@@ -200,6 +201,11 @@ function Questions({
 }
 
 export default function App() {
+  const [createRequested, setCreateRequested] = useState(false);
+  const createSituation = () => {
+    setPage("studio");
+    setCreateRequested(true);
+  };
   const [page, setPage] = useState<Page>("home"),
     [packs, setPacks] = useState<PackRecord[]>([]),
     [runs, setRuns] = useState<RunView[]>([]),
@@ -302,7 +308,7 @@ export default function App() {
   const nav = [
     { id: "home" as Page, label: "내 대시보드", icon: LayoutDashboard },
     { id: "guides" as Page, label: "가이드 둘러보기", icon: BookOpen },
-    { id: "studio" as Page, label: "문서 스튜디오", icon: FileText },
+    { id: "studio" as Page, label: "상황 스튜디오", icon: FileText },
   ];
   return (
     <div className="app-shell">
@@ -400,7 +406,7 @@ export default function App() {
                 : page === "guides"
                   ? "가이드"
                   : page === "studio"
-                    ? "문서 스튜디오"
+                    ? "상황 스튜디오"
                     : page === "settings"
                       ? "설정"
                       : active?.name}
@@ -470,15 +476,12 @@ export default function App() {
                         LifeKit이 함께 정리해요.
                       </h2>
                       <p>
-                        안내 문서를 나에게 맞는 체크리스트로.
+                        서버 실행 순서부터 지원 서류 제출까지.
                         <br />
                         준비부터 완료까지, 놓치는 단계 없이.
                       </p>
-                      <button
-                        className="text-button"
-                        onClick={() => setPage("studio")}
-                      >
-                        내 문서로 가이드 만들기 <ArrowRight size={17} />
+                      <button className="text-button" onClick={createSituation}>
+                        내 상황 직접 만들기 <ArrowRight size={17} />
                       </button>
                     </div>
                     <div className="hero-art" aria-hidden="true">
@@ -612,10 +615,13 @@ export default function App() {
                     </div>
                   ) : (
                     <Empty title="아직 시작한 가이드가 없어요">
-                      <p>신입생 온보딩 예제로 LifeKit을 먼저 경험해 보세요.</p>
+                      <p>
+                        서버 실행·서류 제출 상황을 선택하거나 내 상황을 직접
+                        만들어 보세요.
+                      </p>
                       <button
                         className="button primary"
-                        onClick={() => begin(published[0])}
+                        onClick={() => setPage("guides")}
                       >
                         첫 가이드 시작하기
                         <ArrowRight size={16} />
@@ -627,18 +633,18 @@ export default function App() {
                       <FileText size={21} />
                     </span>
                     <div>
-                      <b>가지고 있는 안내 문서가 있나요?</b>
+                      <b>반복하는 작업의 순서가 기억나지 않나요?</b>
                       <p>
-                        PDF를 업로드하고, 검토를 거쳐 나만의 실행 가이드로
-                        만들어 보세요.
+                        상황별 실행 순서와 제출할 목록을 한번 정리하고, 필요할
+                        때 다시 시작하세요.
                       </p>
                     </div>
                     <button
                       className="button secondary"
-                      onClick={() => setPage("studio")}
+                      onClick={createSituation}
                     >
-                      문서 업로드
-                      <Upload size={15} />
+                      상황 만들기
+                      <Plus size={15} />
                     </button>
                   </div>
                 </>
@@ -647,13 +653,26 @@ export default function App() {
                 <GuideLibrary
                   records={published}
                   onStart={begin}
-                  onStudio={() => setPage("studio")}
+                  onStudio={createSituation}
                 />
               )}
               {page === "run" && active && (
                 <RunWorkspace
                   key={active.id}
                   run={active}
+                  onRepeat={() => {
+                    const record = packs.find(
+                      (p) =>
+                        p.pack.id === active.pack.id &&
+                        p.pack.version === active.pack.version &&
+                        p.status === "published",
+                    );
+                    if (record) {
+                      begin(record);
+                      setAnswers({ ...active.answers });
+                      setRunName(active.name);
+                    }
+                  }}
                   busy={busy}
                   onChange={(taskId, body) =>
                     void action(async () => {
@@ -684,6 +703,8 @@ export default function App() {
                   onRecord={updatePack}
                   notify={setToast}
                   onSource={showSource}
+                  autoCreate={createRequested}
+                  onConsumeCreate={() => setCreateRequested(false)}
                 />
               )}
               {page === "settings" && (
@@ -806,7 +827,7 @@ export default function App() {
       </div>
       {startPack && (
         <Modal
-          title="나에게 맞는 가이드 시작하기"
+          title="상황 실행 시작하기"
           onClose={() => {
             if (!busy) setStartPack(null);
           }}
@@ -830,10 +851,14 @@ export default function App() {
             <div className="modal-intro">
               <Badge tone="lavender">{startPack.pack.category}</Badge>
               <h3>{startPack.pack.title}</h3>
-              <p>몇 가지 질문에 답하면 필요한 작업만 구성해 드려요.</p>
+              <p>
+                {startPack.pack.questions.length
+                  ? "질문에 답하면 이번 상황에 필요한 작업만 구성해 드려요."
+                  : "이번 실행의 이름을 정하고 시작하세요. 이전 실행 기록은 그대로 유지됩니다."}
+              </p>
             </div>
             <label className="field">
-              <span>내 가이드 이름</span>
+              <span>이번 실행 이름</span>
               <input
                 required
                 maxLength={100}
@@ -841,11 +866,13 @@ export default function App() {
                 onChange={(e) => setRunName(e.target.value)}
               />
             </label>
-            <Questions
-              pack={startPack.pack}
-              answers={answers}
-              onChange={setAnswers}
-            />
+            {startPack.pack.questions.length > 0 && (
+              <Questions
+                pack={startPack.pack}
+                answers={answers}
+                onChange={setAnswers}
+              />
+            )}
             <div className="modal-actions">
               <button
                 className="button secondary"
@@ -982,11 +1009,13 @@ function GuideLibrary({
       <div className="page-heading">
         <div>
           <div className="eyebrow">FIND YOUR NEXT STEP</div>
-          <h1>어떤 시작을 준비하나요?</h1>
-          <p>검토가 끝난 가이드로 나에게 필요한 절차를 구성하세요.</p>
+          <h1>지금 어떤 상황인가요?</h1>
+          <p>
+            상황을 선택해 필요한 순서를 따라가거나 제출한 항목을 체크하세요.
+          </p>
         </div>
         <button className="button secondary" onClick={onStudio}>
-          <Upload size={17} />내 문서 추가
+          <Plus size={17} />내 상황 만들기
         </button>
       </div>
       <div className="library-toolbar">
@@ -1014,6 +1043,13 @@ function GuideLibrary({
                 {r.pack.category} · VERSION {r.pack.version}
               </div>
               <h3>{r.pack.title}</h3>
+              <Badge tone="lavender">
+                {r.pack.executionMode === "ordered" ||
+                (!r.pack.executionMode &&
+                  r.pack.tasks.some((t) => t.dependsOn.length > 0))
+                  ? "순서대로 따라가기"
+                  : "자유롭게 체크하기"}
+              </Badge>
               <p>{r.pack.description}</p>
               <div className="library-meta">
                 <span>
@@ -1029,7 +1065,7 @@ function GuideLibrary({
                 className="button primary full"
                 onClick={() => onStart(r)}
               >
-                이 가이드 시작하기
+                이 상황 시작하기
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -1038,7 +1074,7 @@ function GuideLibrary({
       </div>
       {!results.length && (
         <Empty title="검색 결과가 없어요">
-          <p>다른 검색어를 입력하거나 문서 스튜디오에서 가이드를 추가하세요.</p>
+          <p>다른 검색어를 입력하거나 상황 스튜디오에서 직접 만들어 보세요.</p>
         </Empty>
       )}
       <p className="help library-note">
@@ -1056,6 +1092,7 @@ function RunWorkspace({
   onSource,
   onBack,
   onUpgrade,
+  onRepeat,
 }: {
   run: RunView;
   busy: boolean;
@@ -1063,6 +1100,7 @@ function RunWorkspace({
   onSource: () => void;
   onBack: () => void;
   onUpgrade: () => void;
+  onRepeat: () => void;
 }) {
   const [selected, setSelected] = useState(run.plan[0]?.id),
     [filter, setFilter] = useState("all"),
@@ -1091,14 +1129,23 @@ function RunWorkspace({
           <h1>{run.name}</h1>
           <p>{run.pack.description}</p>
         </div>
-        <button
-          className="button secondary"
-          disabled={busy}
-          onClick={onUpgrade}
-        >
-          <GitBranch size={16} />
-          버전 확인
-        </button>
+        <div className="button-group">
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={onRepeat}
+          >
+            <RefreshCw size={16} />새 실행 시작
+          </button>
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={onUpgrade}
+          >
+            <GitBranch size={16} />
+            버전 확인
+          </button>
+        </div>
       </div>
       <div className="run-summary panel">
         <span className="stat-icon green">
@@ -1179,7 +1226,7 @@ function RunWorkspace({
                       >
                         <button
                           className={`task-check ${t.status}`}
-                          aria-label={`${t.title} ${t.status === "done" ? "완료 취소" : "완료 처리"}`}
+                          aria-label={`${t.title} ${t.status === "done" ? `${t.completionLabel || "완료"} 취소` : t.completionLabel === "제출" ? "제출 완료 처리" : "완료 처리"}`}
                           disabled={busy || t.status === "blocked"}
                           onClick={() =>
                             onChange(t.id, { done: t.status !== "done" })
@@ -1200,7 +1247,9 @@ function RunWorkspace({
                             {t.status === "blocked"
                               ? "선행 작업 완료 후 진행"
                               : t.status === "done"
-                                ? "완료한 작업"
+                                ? t.completionLabel === "제출"
+                                  ? "제출 완료"
+                                  : "완료한 작업"
                                 : "지금 진행할 수 있어요"}
                             {t.effectiveDueDate && (
                               <small
@@ -1244,7 +1293,9 @@ function RunWorkspace({
                   }
                 >
                   {task.status === "done"
-                    ? "완료"
+                    ? task.completionLabel === "제출"
+                      ? "제출 완료"
+                      : "완료"
                     : task.status === "ready"
                       ? "진행 가능"
                       : "선행 작업 대기"}
@@ -1298,26 +1349,28 @@ function RunWorkspace({
                   })}
                 </div>
               )}
-              <div className="detail-section">
-                <h4>
-                  <FileText size={14} />
-                  원문 근거
-                </h4>
-                {task.sources.length ? (
-                  task.sources.map((s, i) => (
-                    <blockquote key={i}>
-                      <span>PAGE {s.page}</span>
-                      {s.quote}
-                    </blockquote>
-                  ))
-                ) : (
-                  <p className="help">연결된 원문 근거가 없습니다.</p>
-                )}
-                <button className="text-button" onClick={onSource}>
-                  전체 문서 확인
-                  <ExternalLink size={13} />
-                </button>
-              </div>
+              {task.sources.length > 0 && (
+                <div className="detail-section">
+                  <h4>
+                    <FileText size={14} />
+                    원문 근거
+                  </h4>
+                  {task.sources.length ? (
+                    task.sources.map((s, i) => (
+                      <blockquote key={i}>
+                        <span>PAGE {s.page}</span>
+                        {s.quote}
+                      </blockquote>
+                    ))
+                  ) : (
+                    <p className="help">연결된 원문 근거가 없습니다.</p>
+                  )}
+                  <button className="text-button" onClick={onSource}>
+                    전체 문서 확인
+                    <ExternalLink size={13} />
+                  </button>
+                </div>
+              )}
               <div className="detail-section">
                 <label className="field">
                   <span>
@@ -1364,10 +1417,12 @@ function RunWorkspace({
                   <Check size={16} />
                 )}{" "}
                 {task.status === "done"
-                  ? "완료 취소"
+                  ? `${task.completionLabel || "완료"} 취소`
                   : task.status === "blocked"
                     ? "선행 작업을 먼저 완료하세요"
-                    : "이 작업 완료하기"}
+                    : task.completionLabel === "제출"
+                      ? "제출 완료로 표시"
+                      : "이 작업 완료하기"}
               </button>
               {task.status === "done" && (
                 <p className="help">
@@ -1491,6 +1546,8 @@ function Studio({
   onRecord,
   notify,
   onSource,
+  autoCreate,
+  onConsumeCreate,
 }: {
   packs: PackRecord[];
   selectedId: string | null;
@@ -1501,6 +1558,8 @@ function Studio({
   onRecord: (r: PackRecord) => void;
   notify: (s: string) => void;
   onSource: (p: Pack) => void;
+  autoCreate: boolean;
+  onConsumeCreate: () => void;
 }) {
   const record = packs.find((p) => p.recordId === selectedId) || packs[0];
   const [working, setWorking] = useState<Pack | null>(record?.pack ?? null),
@@ -1508,9 +1567,16 @@ function Studio({
     [mode, setMode] = useState("visual"),
     [tab, setTab] = useState("editor"),
     [uploadOpen, setUploadOpen] = useState(false),
+    [createOpen, setCreateOpen] = useState(false),
     [file, setFile] = useState<File | null>(null),
     [title, setTitle] = useState(""),
     [ai, setAI] = useState(false);
+  useEffect(() => {
+    if (autoCreate) {
+      setCreateOpen(true);
+      onConsumeCreate();
+    }
+  }, [autoCreate, onConsumeCreate]);
   useEffect(() => {
     setWorking(record?.pack ?? null);
     setJson(JSON.stringify(record?.pack, null, 2));
@@ -1536,9 +1602,9 @@ function Studio({
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">FROM DOCUMENT TO ACTION</div>
-          <h1>문서를 실행 가능한 가이드로.</h1>
-          <p>원문을 확인하고, 작업과 조건을 검토한 뒤 배포하세요.</p>
+          <div className="eyebrow">YOUR SITUATION, YOUR STEPS</div>
+          <h1>내 상황을 실행 가능한 가이드로.</h1>
+          <p>직접 순서와 목록을 만들거나, PDF를 가져와 초안으로 시작하세요.</p>
         </div>
         <div className="button-group">
           <label className="button secondary file-label">
@@ -1562,18 +1628,26 @@ function Studio({
             />
           </label>
           <button
-            className="button primary"
+            className="button secondary"
             onClick={() => setUploadOpen(true)}
           >
             <Plus size={16} />
-            PDF 업로드
+            PDF로 만들기
+          </button>
+          <button
+            className="button primary"
+            disabled={busy}
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus size={16} />
+            직접 작성
           </button>
         </div>
       </div>
       <div className="studio-grid">
         <aside className="panel studio-sidebar">
           <div className="studio-sidebar-head">
-            <b>가이드 문서</b>
+            <b>상황 가이드</b>
             <span>{packs.length}</span>
           </div>
           {packs.map((p) => (
@@ -1595,8 +1669,11 @@ function Studio({
           ))}
           <div className="studio-help">
             <Sparkles size={20} />
-            <b>AI 초안은 시작점이에요.</b>
-            <p>원문과 비교해 조건, 선행 관계, 날짜를 확인해 주세요.</p>
+            <b>내가 기억할 순서를 정리해요.</b>
+            <p>
+              문서 없이 만들 수 있어요. 순서·조건·제출 항목을 직접 정하고 필요할
+              때 다시 실행하세요.
+            </p>
           </div>
         </aside>
         <section className="panel studio-editor">
@@ -1605,7 +1682,7 @@ function Studio({
               <div className="editor-header">
                 <div>
                   <Badge tone={readonly ? "green" : "lavender"}>
-                    {readonly ? "배포됨" : "검토 중인 초안"}
+                    {readonly ? "사용 가능" : "검토 중인 초안"}
                   </Badge>
                   <span className="editor-version">
                     VERSION {record.pack.version}
@@ -1659,13 +1736,13 @@ function Studio({
                             await api.save(record.recordId, pack);
                             onRecord(await api.publish(record.recordId));
                             notify(
-                              "검토한 가이드를 배포했습니다. 가이드 목록에서 시작할 수 있어요.",
+                              "가이드를 사용할 수 있도록 확정했습니다. 상황 목록에서 시작하세요.",
                             );
                           })
                         }
                       >
                         <Check size={15} />
-                        검토 완료·배포
+                        검토 완료·사용 확정
                       </button>
                     </>
                   )}
@@ -1684,10 +1761,12 @@ function Studio({
                 >
                   버전 비교
                 </button>
-                <button onClick={() => onSource(record.pack)}>
-                  원문 보기
-                  <ExternalLink size={13} />
-                </button>
+                {record.documentId && (
+                  <button onClick={() => onSource(record.pack)}>
+                    원문 보기
+                    <ExternalLink size={13} />
+                  </button>
+                )}
               </div>
               {tab === "diff" ? (
                 <div className="editor-content">
@@ -1822,7 +1901,15 @@ function Studio({
                                     description: "",
                                     section: "기본 절차",
                                     preparations: [],
-                                    dependsOn: [],
+                                    dependsOn:
+                                      working.executionMode === "ordered" &&
+                                      working.tasks.length
+                                        ? [
+                                            working.tasks[
+                                              working.tasks.length - 1
+                                            ].id,
+                                          ]
+                                        : [],
                                     when: [],
                                     sources: [],
                                   },
@@ -1837,13 +1924,14 @@ function Studio({
                       </fieldset>
                       {readonly && (
                         <p className="help">
-                          배포된 가이드는 읽기 전용입니다. 각 작업을 펼쳐
+                          사용 중인 가이드는 읽기 전용입니다. 각 작업을 펼쳐
                           확인하거나 새 버전을 만들어 수정하세요.
                         </p>
                       )}
                       {working.tasks.map((task, i) => (
                         <TaskEditor
                           key={task.id}
+                          hasDocument={Boolean(record.documentId)}
                           readOnly={readonly || busy}
                           task={task}
                           index={i}
@@ -1877,12 +1965,34 @@ function Studio({
               )}
             </>
           ) : (
-            <Empty title="문서를 추가해 보세요">
-              <p>PDF 또는 Scenario Pack JSON으로 시작하세요.</p>
+            <Empty title="내 상황을 만들어 보세요">
+              <p>직접 작성하거나 예제·PDF·Scenario Pack JSON으로 시작하세요.</p>
             </Empty>
           )}
         </section>
       </div>
+      {createOpen && (
+        <Modal
+          title="내 상황 직접 만들기"
+          onClose={() => {
+            if (!busy) setCreateOpen(false);
+          }}
+        >
+          <ScenarioCreator
+            busy={busy}
+            onClose={() => setCreateOpen(false)}
+            onCreate={(pack) =>
+              void action(async () => {
+                onRecord(await api.createScenario(pack));
+                setCreateOpen(false);
+                notify(
+                  "상황 초안을 만들었어요. 필요한 내용을 수정하고 사용을 확정하세요.",
+                );
+              })
+            }
+          />
+        </Modal>
+      )}
       {uploadOpen && (
         <Modal
           title="PDF에서 새 가이드 만들기"
@@ -2131,6 +2241,7 @@ function TaskEditor({
   onChange,
   onRemove,
   readOnly,
+  hasDocument,
 }: {
   task: Task;
   index: number;
@@ -2138,6 +2249,7 @@ function TaskEditor({
   onChange: (t: Task) => void;
   onRemove: () => void;
   readOnly: boolean;
+  hasDocument: boolean;
 }) {
   const [expanded, setExpanded] = useState(index === 0);
   return (
@@ -2163,6 +2275,21 @@ function TaskEditor({
       {expanded && (
         <fieldset className="task-editor-body" disabled={readOnly}>
           <div className="help">작업 ID: {task.id}</div>
+          <label className="field">
+            <span>체크할 때 표시할 말</span>
+            <select
+              value={task.completionLabel || "완료"}
+              onChange={(e) =>
+                onChange({
+                  ...task,
+                  completionLabel: e.target.value as "완료" | "제출",
+                })
+              }
+            >
+              <option value="완료">완료</option>
+              <option value="제출">제출 완료</option>
+            </select>
+          </label>
           <div className="form-columns">
             <label className="field">
               <span>작업명</span>
@@ -2380,67 +2507,71 @@ function TaskEditor({
               조건 추가
             </button>
           </div>
-          <div className="detail-section">
-            <h4>원문 근거</h4>
-            {task.sources.map((s, i) => (
-              <div className="source-editor" key={i}>
-                <label className="field">
-                  <span>페이지</span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={s.page}
-                    onChange={(e) =>
+          {(hasDocument || task.sources.length > 0) && (
+            <div className="detail-section">
+              <h4>원문 근거</h4>
+              {task.sources.map((s, i) => (
+                <div className="source-editor" key={i}>
+                  <label className="field">
+                    <span>페이지</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={s.page}
+                      onChange={(e) =>
+                        onChange({
+                          ...task,
+                          sources: task.sources.map((p, j) =>
+                            j === i
+                              ? { ...p, page: Number(e.target.value) }
+                              : p,
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="field">
+                    <span>정확한 원문 인용</span>
+                    <textarea
+                      value={s.quote}
+                      onChange={(e) =>
+                        onChange({
+                          ...task,
+                          sources: task.sources.map((p, j) =>
+                            j === i ? { ...p, quote: e.target.value } : p,
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  <button
+                    className="icon-button danger"
+                    aria-label="근거 삭제"
+                    onClick={() =>
                       onChange({
                         ...task,
-                        sources: task.sources.map((p, j) =>
-                          j === i ? { ...p, page: Number(e.target.value) } : p,
-                        ),
+                        sources: task.sources.filter((_, j) => j !== i),
                       })
                     }
-                  />
-                </label>
-                <label className="field">
-                  <span>정확한 원문 인용</span>
-                  <textarea
-                    value={s.quote}
-                    onChange={(e) =>
-                      onChange({
-                        ...task,
-                        sources: task.sources.map((p, j) =>
-                          j === i ? { ...p, quote: e.target.value } : p,
-                        ),
-                      })
-                    }
-                  />
-                </label>
-                <button
-                  className="icon-button danger"
-                  aria-label="근거 삭제"
-                  onClick={() =>
-                    onChange({
-                      ...task,
-                      sources: task.sources.filter((_, j) => j !== i),
-                    })
-                  }
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-            <button
-              className="text-button"
-              onClick={() =>
-                onChange({
-                  ...task,
-                  sources: [...task.sources, { page: 1, quote: "" }],
-                })
-              }
-            >
-              <Plus size={13} />
-              근거 추가
-            </button>
-          </div>
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className="text-button"
+                onClick={() =>
+                  onChange({
+                    ...task,
+                    sources: [...task.sources, { page: 1, quote: "" }],
+                  })
+                }
+              >
+                <Plus size={13} />
+                근거 추가
+              </button>
+            </div>
+          )}
         </fieldset>
       )}
     </article>

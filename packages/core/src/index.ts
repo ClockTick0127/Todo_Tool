@@ -19,6 +19,7 @@ export const QuestionSchema = z.object({
 });
 export const TaskSchema = z.object({
   id,
+  completionLabel: z.enum(["완료", "제출"]).optional(),
   title: z.string().min(1).max(200),
   description: z.string().max(12000).default(""),
   section: z.string().min(1).max(100).default("기본 절차"),
@@ -52,6 +53,7 @@ export const PackSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(4000).default(""),
   category: z.string().max(100).default("생활 가이드"),
+  executionMode: z.enum(["ordered", "checklist"]).optional(),
   questions: z.array(QuestionSchema).max(50),
   tasks: z.array(TaskSchema).min(1).max(200),
 });

@@ -30,6 +30,13 @@
       "type": "string",
       "maxLength": 100
     },
+    "executionMode": {
+      "type": "string",
+      "enum": [
+        "ordered",
+        "checklist"
+      ]
+    },
     "questions": {
       "maxItems": 50,
       "type": "array",
@@ -96,6 +103,13 @@
           "id": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9_-]{0,79}$"
+          },
+          "completionLabel": {
+            "type": "string",
+            "enum": [
+              "완료",
+              "제출"
+            ]
           },
           "title": {
             "type": "string",

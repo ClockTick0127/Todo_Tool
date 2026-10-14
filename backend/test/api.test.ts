@@ -54,7 +54,9 @@ test("로컬 API: 생성, 잠금, 저장, 버전 변경, 재시작 후 복원", 
   };
   try {
     const records = (await req("/packs")).data as PackRecord[];
-    const initial = records[0];
+    const initial = records.find(
+      (record) => record.pack.id === "freshman-onboarding",
+    )!;
     assert.equal((await req("/health")).data.aiConfigured, false);
     const created = await req("/runs", "POST", {
       recordId: initial.recordId,
@@ -211,7 +213,9 @@ test("실제 PDF 추출부터 수동 초안 검토와 배포까지", async () =>
     const record = (await uploaded.json()) as PackRecord;
     assert.equal(record.method, "수동 초안");
     assert.equal(record.pack.tasks[0].sources[0].page, 1);
-    const sourceDocument = await fetch(`${base}/documents/${record.documentId}`);
+    const sourceDocument = await fetch(
+      `${base}/documents/${record.documentId}`,
+    );
     assert.equal((await sourceDocument.json()).name, "입학안내.pdf");
     const pdf = await fetch(`${base}/documents/${record.documentId}/pdf`);
     assert.equal(pdf.headers.get("content-type"), "application/pdf");

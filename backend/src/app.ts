@@ -15,6 +15,7 @@ import {
   type RunView,
 } from "@lifekit/core";
 import type { Store } from "./store.js";
+import { scenarioTemplates } from "./templates.js";
 import {
   CompatibleAIAdapter,
   extractPDF,
@@ -101,6 +102,26 @@ export function createApp(
     }),
   );
   app.get("/api/packs", (_req, res) => res.json(store.packs()));
+  app.get("/api/scenario-templates", (_req, res) =>
+    res.json(scenarioTemplates),
+  );
+  app.post("/api/packs", (req, res) => {
+    const parsed = validatePack(req.body);
+    const record = {
+      recordId: randomUUID(),
+      pack: {
+        ...parsed,
+        id: `scenario-${randomUUID().slice(0, 8)}`,
+        version: 1,
+      },
+      status: "draft" as const,
+      documentId: null,
+      method: "직접 작성",
+      createdAt: new Date().toISOString(),
+    };
+    store.savePack(record);
+    res.status(201).json(record);
+  });
   app.get("/api/packs/:id", (req, res) => res.json(packRecord(req.params.id)));
   app.get("/api/documents/:id", (req, res) => {
     const doc = store.document(req.params.id);

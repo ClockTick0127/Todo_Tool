@@ -1678,6 +1678,44 @@ code {
   margin-bottom: 20px;
   gap: 15px;
 }
+.scenario-mode-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 15px;
+  background: #f5f1fb;
+  color: #9b83b4;
+  border-radius: 8px;
+  margin: 0 0 18px;
+}
+.scenario-mode-note p {
+  font-size: 11px;
+  margin: 0;
+  line-height: 1.8;
+}
+.scenario-preview {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 17px;
+  background: #fcfaff;
+}
+.scenario-preview > b {
+  font-size: 12px;
+  color: #9580a7;
+}
+.scenario-preview ol {
+  margin: 12px 0;
+  padding-left: 21px;
+  font-size: 11px;
+  color: #a38db4;
+  line-height: 2;
+}
+.scenario-preview li small {
+  display: inline-block;
+  color: #b8a5c7;
+  margin-left: 8px;
+  font-size: 9px;
+}
 .source-pages article {
   padding: 23px;
   background: #fcfaff;

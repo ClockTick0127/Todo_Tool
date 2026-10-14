@@ -1,10 +1,10 @@
 {
   "name": "lifekit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "desktop/main.mjs",
-  "description": "Local document-to-checklist workspace",
+  "description": "Local situation guides and checklists",
   "author": "LifeKit contributors",
   "license": "MIT",
   "workspaces": [

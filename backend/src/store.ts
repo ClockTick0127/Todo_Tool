@@ -4,6 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { PackRecord, Run, SourcePage } from "@lifekit/core";
 import { samplePack, samplePages } from "./sample.js";
+import { scenarioTemplates } from "./templates.js";
 
 export function openStore(directory: string) {
   mkdirSync(directory, { recursive: true });
@@ -97,6 +98,21 @@ export function openStore(directory: string) {
         createdAt: new Date().toISOString(),
       });
     });
+  // Add new built-in situations to existing databases without changing user guides or runs.
+  transaction(() => {
+    const existingIds = new Set(packs().map((record) => record.pack.id));
+    for (const pack of scenarioTemplates) {
+      if (existingIds.has(pack.id)) continue;
+      savePack({
+        recordId: randomUUID(),
+        pack,
+        status: "published",
+        documentId: null,
+        method: "상황 예제",
+        createdAt: new Date().toISOString(),
+      });
+    }
+  });
   return {
     db,
     getPack,

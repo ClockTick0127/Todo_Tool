@@ -41,6 +41,12 @@ export async function request<T>(
 export const api = {
   health: () => request<Health>("/health"),
   packs: () => request<PackRecord[]>("/packs"),
+  templates: () => request<Pack[]>("/scenario-templates"),
+  createScenario: (pack: Pack) =>
+    request<PackRecord>("/packs", {
+      method: "POST",
+      body: JSON.stringify(pack),
+    }),
   runs: () => request<RunView[]>("/runs"),
   document: (id: string) => request<DocumentView>(`/documents/${id}`),
   createRun: (recordId: string, name: string, answers: Answers) =>

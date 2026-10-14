@@ -6,6 +6,8 @@
 | --- | --- |
 | GET /health | 저장소·AI 모델 설정 상태. 키 미포함 |
 | GET /packs | 모든 초안과 배포 버전 |
+| GET /scenario-templates | 문서 없이 시작하는 서버 실행·서류 제출 예제 Pack 목록 |
+| POST /packs | 직접 작성한 Scenario Pack JSON → 문서 없는 새 초안. 서버에서 새 ID와 버전 1을 부여 |
 | GET /packs/:recordId | 단일 버전 레코드 |
 | POST /documents | multipart `file`(PDF), `title`, `mode`(`manual` 또는 `ai`) → 새 초안 |
 | GET /documents/:documentId | 파일명·추출 페이지·PDF 존재 여부 |

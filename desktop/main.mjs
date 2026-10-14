@@ -191,7 +191,7 @@ if (!app.requestSingleInstanceLock()) {
                     title: "LifeKit",
                     message: `LifeKit ${app.getVersion()}`,
                     detail:
-                      "로컬에서 사용하는 문서 기반 절차 관리 도구\n데이터는 이 PC의 사용자 폴더에 저장됩니다.",
+                    "상황별 실행 순서와 체크리스트를 관리하는 로컬 도구\n데이터는 이 PC의 사용자 폴더에 저장됩니다.",
                   }),
               },
             ],

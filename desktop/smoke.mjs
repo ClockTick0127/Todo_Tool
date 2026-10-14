@@ -44,8 +44,14 @@ export async function smokeTest(baseURL, userData) {
   const packs = await json("/api/packs");
   const previousRuns = await json("/api/runs");
   if (previousRuns.length) {
-    assert.equal(previousRuns[0].name, "EXE 실행 검사");
-    assert.equal(previousRuns[0].completed, 1);
+    assert.equal(
+      previousRuns.find((run) => run.name === "EXE 실행 검사")?.completed,
+      1,
+    );
+    assert.equal(
+      previousRuns.find((run) => run.name === "서류 제출 검사")?.completed,
+      1,
+    );
   }
   const run = await post("/api/runs", {
     recordId: packs.find((p) => p.method === "예제").recordId,
@@ -74,6 +80,51 @@ export async function smokeTest(baseURL, userData) {
   assert.match(record.pack.tasks[0].description, /Prepare your account/);
   const doc = await json(`/api/documents/${record.documentId}`);
   assert.equal(doc.name, "실행검사.pdf");
+  const direct = await post("/api/packs", {
+    schemaVersion: 1,
+    id: "smoke-situation",
+    version: 1,
+    title: "문서 없는 서류 체크리스트",
+    executionMode: "checklist",
+    questions: [],
+    tasks: [
+      { id: "resume", title: "이력서 제출", completionLabel: "제출" },
+      { id: "portfolio", title: "포트폴리오 제출", completionLabel: "제출" },
+    ],
+  });
+  assert.equal(direct.documentId, null);
+  await post(`/api/packs/${direct.recordId}/publish`, {});
+  const submission = await post("/api/runs", {
+    recordId: direct.recordId,
+    name: "서류 제출 검사",
+    answers: {},
+  });
+  const submitted = await json(`/api/runs/${submission.id}/tasks/portfolio`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Origin: baseURL },
+    body: JSON.stringify({ done: true }),
+  });
+  assert.equal(submitted.completed, 1);
+  assert.equal(
+    submitted.plan.find((task) => task.id === "resume").status,
+    "ready",
+  );
+  const repeated = await post("/api/runs", {
+    recordId: direct.recordId,
+    name: "다른 지원 건 검사",
+    answers: {},
+  });
+  assert.equal(repeated.completed, 0);
+  const serverTemplate = packs.find((p) => p.pack.id === "development-server");
+  const serverRun = await post("/api/runs", {
+    recordId: serverTemplate.recordId,
+    name: "서버 순서 검사",
+    answers: { database: false },
+  });
+  assert.equal(
+    serverRun.plan.find((task) => task.id === "backend").status,
+    "blocked",
+  );
   assert.ok(existsSync(path.join(userData, "data", "lifekit.sqlite")));
   return {
     ok: true,
@@ -86,6 +137,10 @@ export async function smokeTest(baseURL, userData) {
       "persist progress",
       "PDF extraction in packaged runtime",
       "Korean filenames",
+      "document-free scenario creation and publishing",
+      "independent submission checklist",
+      "repeat runs with separate progress",
+      "conditional server startup order",
     ],
     userData,
     restartPersistenceVerified: previousRuns.length > 0,
